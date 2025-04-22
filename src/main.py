@@ -6,6 +6,7 @@ import requests_cache
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 
+from collections import defaultdict
 from configs import configure_argument_parser, configure_logging
 from constants import (BASE_DIR, CODING, EXPECTED_STATUS, MAIN_DOC_URL,
                        PEPS_URL, STATUS, STATUS_ID, STATUS_TABLE)
@@ -21,7 +22,7 @@ def whats_new(session):
     response.encoding = CODING
     soup = BeautifulSoup(response.text, features="lxml")
     main_div = find_tag(soup, "section", attrs={"id": "what-s-new-in-python"})
-    div_with_ul = main_div.find("div", attrs={"class": "toctree-wrapper"})
+    div_with_ul = find_tag(main_div, "div", attrs={"class": "toctree-wrapper"})
     sections_by_python = div_with_ul.find_all(
         "li", attrs={"class": "toctree-l1"}
     )
@@ -100,55 +101,46 @@ def pep(session):
     response.encoding = CODING
     soup = BeautifulSoup(response.text, "lxml")
     results = [("Статус", "Колличество")]
-    status_counts = {}
-    tables = soup.find_all(
-        "table", class_="pep-zero-table docutils align-default"
-    )
-    for table in tqdm(tables):
-        tabl = find_tag(table, "tbody")
-        rows = tabl.find_all("tr")
-        for row in rows:
-            status = row.find("abbr")
-            peps_urls = row.find("a", {"class": "pep reference internal"})
-            for pep_url in peps_urls:
-                url = urljoin(PEPS_URL, f"pep-{pep_url}")
-                response = get_response(session, url)
-                response.encoding = CODING
-                soup = BeautifulSoup(response.text, "lxml")
-                status_codes = soup.find("abbr")
-                if not status:
-                    status_counts[status_codes.text] = (
-                        status_counts.get(status_codes.text, 0) + STATUS
-                    )
-                    continue
-                elif len(status.text) == STATUS_TABLE and (
-                    status_codes.text
-                    in EXPECTED_STATUS[status.text[STATUS_ID]]
-                ):
-                    status_counts[status_codes.text] = (
-                        status_counts.get(status_codes.text, 0) + STATUS
-                    )
-                elif len(status.text) == STATUS and (
-                    status_codes.text in EXPECTED_STATUS[""]
-                ):
-                    status_counts[status_codes.text] = (
-                        status_counts.get(status_codes.text, 0) + STATUS
-                    )
-                elif (
-                    status_codes.text
-                    not in EXPECTED_STATUS[status.text[STATUS_ID]]
-                ):
-                    status_counts[status_codes.text] = (
-                        status_counts.get(status_codes.text, 0) + STATUS
-                    )
-                    logging.info(
-                        f"Несовпадающие статусы: {url} "
-                        f"Статус в таблице: "
-                        f"{EXPECTED_STATUS[status.text[STATUS_ID]]} "
-                        f"Статус на странице: {status_codes.text}"
-                    )
-    for status, count in sorted(status_counts.items()):
-        results.append((status, count))
+    status_counts = defaultdict(int)
+    log_messages = []
+    rows = soup.select("table.pep-zero-table.docutils.align-default tbody tr")
+    for row in tqdm(rows):
+        peps_urls = find_tag(row, "a", {"class": "pep reference internal"})
+        if not peps_urls:
+            continue
+        url = urljoin(PEPS_URL, f"{peps_urls['href']}")
+        response = get_response(session, url)
+        if response is None:
+            continue
+        response.encoding = CODING
+        soup = BeautifulSoup(response.text, "lxml")
+        status_codes = find_tag(soup, "abbr")
+        if peps_urls['href'] == 'pep-0801/':
+            status_counts[status_codes.text] += STATUS
+            continue
+        status = find_tag(row, "abbr")
+        if len(status.text) == STATUS_TABLE and (
+            status_codes.text
+            in EXPECTED_STATUS[status.text[STATUS_ID]]
+        ):
+            status_counts[status_codes.text] += STATUS
+        elif len(status.text) == STATUS and (
+            status_codes.text in EXPECTED_STATUS[""]
+        ):
+            status_counts[status_codes.text] += STATUS
+        elif (
+            status_codes.text
+            not in EXPECTED_STATUS[status.text[STATUS_ID]]
+        ):
+            status_counts[status_codes.text] += STATUS
+            log_messages.append(
+                    f"Несовпадающие статусы: {url} "
+                    f"Статус в таблице: {EXPECTED_STATUS.get('', 'N/A')} "
+                    f"Статус на странице: {status_codes.text}"
+                )
+    if log_messages:
+        logging.info('\n'.join(log_messages))
+    results.extend(sorted(status_counts.items()))
     total = sum(status_counts.values())
     results.append(("Total", total))
     return results
