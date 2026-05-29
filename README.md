@@ -1,155 +1,178 @@
-# Проект парсинга pep
+# PEP Parser
 
-## Описание проекта
+![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
+![BeautifulSoup](https://img.shields.io/badge/BeautifulSoup4-parsing-green)
+![Requests](https://img.shields.io/badge/Requests-HTTP-orange)
+![Pytest](https://img.shields.io/badge/Pytest-tested-green)
 
-Этот проект представляет собой многофункциональный парсер документации Python, который включает:
+Command-line parser for Python documentation and PEP status analytics.
 
-1. Парсер нововведений в версиях Python (`whats-new`)
-2. Парсер последних версий Python (`latest-versions`)
-3. Загрузчик документации (`download`)
-4. Парсер документов PEP (`pep`)
+The project collects data from official Python documentation pages, parses HTML with BeautifulSoup and outputs results as tables or CSV files.
 
-## Основные функции
+---
 
-### 1. Режим `whats-new`
-Парсит информацию о нововведениях в различных версиях Python:
-- Ссылки на статьи
-- Заголовки версий
-- Редакторов и авторов
+## Main features
 
-Пример вывода:
-```
-https://docs.python.org/3/whatsnew/3.13.html What's New In Python 3.13 Editors: Adam Turner and Thomas Wouters
-https://docs.python.org/3/whatsnew/3.12.html What's New In Python 3.12 Editor: Adam Turner
-```
+- Parse Python "What's New" pages
+- Collect latest Python versions and statuses
+- Download Python documentation archive
+- Parse PEP pages and calculate status statistics
+- Compare PEP statuses from the index and individual pages
+- Save results to CSV files
+- Pretty table output in terminal
+- Request caching
+- Rotating file logging
+- CLI arguments with `argparse`
+- Automated tests with Pytest
 
-### 2. Режим `latest-versions`
-Получает информацию о доступных версиях Python:
-- Ссылки на документацию
-- Номера версий
-- Статусы версий
+---
 
-Пример вывода:
-```
-https://docs.python.org/3.14/ 3.14 in development
-https://docs.python.org/3.13/ 3.13 stable
-https://docs.python.org/3.12/ 3.12 security-fixes
-```
+## Tech stack
 
-### 3. Режим `download`
-Загружает архив с документацией Python в формате PDF:
-- Автоматически определяет последнюю версию
-- Сохраняет архив в папку `downloads`
-- Логирует процесс загрузки
+- Python
+- BeautifulSoup4
+- Requests
+- Requests Cache
+- LXML
+- PrettyTable
+- TQDM
+- Pytest
+- Flake8
 
-Пример лога:
-```
-21.04.2025 20:07:51 - [INFO] - Архив был загружен и сохранён: C:\Dev\bs4_parser_pep\src\downloads\python-3.13-docs-pdf-a4.zip
-```
+---
 
-### 4. Режим `pep`
-Анализирует документы PEP (Python Enhancement Proposals):
-- Собирает статистику по статусам PEP
-- Сравнивает статусы между общим списком и страницами PEP
-- Формирует отчет в CSV формате
-- Логирует несоответствия статусов
+## Project structure
 
-## Использование
-
-```bash
-python src/main.py [режим] [опции]
-```
-
-Доступные режимы:
-- `whats-new` - нововведения в версиях Python
-- `latest-versions` - информация о версиях Python
-- `download` - загрузка документации
-- `pep` - анализ документов PEP
-
-Опции:
-- `-c/--clear-cache` - очистка кеша
-- `-o/--output {pretty,file}` - формат вывода (таблица или файл)
-
-## Примеры команд
-
-1. Получить информацию о нововведениях:
-```bash
-python src/main.py whats-new -o pretty
-```
-
-2. Получить информацию о версиях Python:
-```bash
-python src/main.py latest-versions -o file
-```
-
-3. Загрузить документацию:
-```bash
-python src/main.py download
-```
-
-4. Проанализировать PEP:
-```bash
-python src/main.py pep -o file
-```
-
-## Структура проекта
-
-```
+```text
 bs4_parser_pep/
 ├── src/
-│   ├── __init__.py
-│   ├── configs.py       # Конфигурации парсера
-│   ├── constants.py     # Константы проекта
-│   ├── exceptions.py    # Пользовательские исключения
-│   ├── main.py          # Основной скрипт
-│   ├── outputs.py       # Функции вывода
-│   └── utils.py         # Вспомогательные функции
-├── downloads/           # Загруженные архивы
-├── logs/                # Логи работы
-│   └── parser.log
-├── results/             # Результаты работы
-│   └── pep_results.csv
-├── tests/               # Тесты
-├── .flake8              # Конфигурация линтера
-├── .gitignore
-├── pytest.ini           # Конфигурация тестов
-├── README.md
-└── requirements.txt     # Зависимости
+│   ├── configs.py          # CLI and logging configuration
+│   ├── constants.py        # URLs, constants and settings
+│   ├── exceptions.py       # Custom exceptions
+│   ├── main.py             # Parser modes and entry point
+│   ├── outputs.py          # Table and file output logic
+│   ├── utils.py            # Request and HTML helper functions
+│   └── results/            # Generated CSV reports
+├── tests/                  # Automated tests
+├── pytest.ini
+├── .flake8
+└── requirements.txt
 ```
 
-## Логирование
+---
 
-Все действия парсера записываются в файл `logs/parser.log` в формате:
-```
-[дата-время] - [уровень] - [сообщение]
-```
+## Parser modes
 
-Пример:
-```
-21.04.2025 20:04:09 - [INFO] - Парсер запущен!
-```
+| Mode | Description |
+|---|---|
+| `whats-new` | Parses Python release notes pages |
+| `latest-versions` | Collects Python documentation versions and statuses |
+| `download` | Downloads Python documentation archive |
+| `pep` | Parses PEP pages and calculates status statistics |
 
-## Требования
+---
 
-- Python 3.8+
-- Установленные зависимости из `requirements.txt`
+## Installation
 
-## Установка
+Clone the repository:
 
-1. Клонируйте репозиторий:
 ```bash
 git clone https://github.com/Viocid/bs4_parser_pep.git
 cd bs4_parser_pep
 ```
 
-2. Установите зависимости:
+Create and activate virtual environment:
+
+```bash
+python -m venv venv
+source venv/bin/activate      # Linux / macOS
+venv\Scripts\activate         # Windows
+```
+
+Install dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
 
-## Тестирование
+---
 
-Для запуска тестов:
+## Usage
+
+General command format:
+
+```bash
+python src/main.py <mode> [options]
+```
+
+Available options:
+
+| Option | Description |
+|---|---|
+| `-c`, `--clear-cache` | Clear request cache before running |
+| `-o pretty` | Print result as a formatted table |
+| `-o file` | Save result to CSV file |
+
+---
+
+## Examples
+
+Parse Python release notes:
+
+```bash
+python src/main.py whats-new -o pretty
+```
+
+Get latest Python versions:
+
+```bash
+python src/main.py latest-versions -o file
+```
+
+Download documentation archive:
+
+```bash
+python src/main.py download
+```
+
+Analyze PEP statuses:
+
+```bash
+python src/main.py pep -o file
+```
+
+---
+
+## Output
+
+The parser can output data in two formats:
+
+- formatted terminal table;
+- CSV file in the `results/` directory.
+
+Logs are written to:
+
+```text
+src/logs/parser.log
+```
+
+---
+
+## Running tests
+
 ```bash
 pytest
 ```
+
+---
+
+## What this project demonstrates
+
+- Web scraping with BeautifulSoup
+- Working with external documentation resources
+- CLI application design
+- Request caching
+- CSV report generation
+- Logging with rotating file handler
+- Error handling for missing HTML elements
+- Automated testing
